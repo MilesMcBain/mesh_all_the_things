@@ -7,35 +7,20 @@ library(r2vr.gis)
 
 get_loc_3d <- function(loc, buffer = 5000){
 
-  buffer_meters<- buffer
-
-  decode_elevation <- function(dat,...) {
-    height <-  -10000 + ((dat[[1]] * 256 * 256 + dat[[2]] * 256 + dat[[3]]) * 0.1)
-    projection(height) <- "+proj=merc +a=6378137 +b=6378137"
-    height
-  }
-
-  tex_tiles_72 <-
+  tex_tiles_128 <-
   ceramic::cc_location(loc = loc,
-                       buffer = buffer_meters,
+                       buffer = buffer,
                        type = "mapbox.satellite",
-                       max_tiles = 100,
+                       max_tiles = 128,
                        debug = TRUE,
                        crop_to_buffer = TRUE)
 
-dem_tiles <-
-  ceramic::cc_location(loc = loc,
-                       buffer = buffer_meters,
-                       type = "mapbox.terrain-rgb",
-                       max_tiles = 16,
-                       crop_to_buffer = TRUE)
+  dem <- get_loc_elev(loc, buffer)
 
-dem <- decode_elevation(dem_tiles)
-
-loc_mesh <- quadmesh(dem,
-                     texture = tex_tiles_72,
-                     texture_filename = "location.png")
- loc_mesh
+  loc_mesh <- quadmesh(dem,
+                       texture = tex_tiles_128,
+                       texture_filename = "location.png")
+  loc_mesh
 }
 
 plotVR <- function(q_mesh){
@@ -75,6 +60,25 @@ plotVR <- function(q_mesh){
 
 }
 
+get_loc_elev <- function(loc, buffer = 5000){
+
+  decode_elevation <- function(dat,...) {
+    height <-  -10000 + ((dat[[1]] * 256 * 256 + dat[[2]] * 256 + dat[[3]]) * 0.1)
+    projection(height) <- "+proj=merc +a=6378137 +b=6378137"
+    height
+  }
+
+  dem_tiles <-
+    ceramic::cc_location(loc = loc,
+                         buffer = buffer,
+                         type = "mapbox.terrain-rgb",
+                         max_tiles = 32,
+                         crop_to_buffer = TRUE,
+                         debug = TRUE)
+
+  decode_elevation(dem_tiles)
+}
+
 rio_grande_gorge<- c(-105.732960, 36.475326)
 mt_tibbro <- c(152.946954, -26.926598)
 monte_tomaro <- c(8.863926, 46.106759)
@@ -89,6 +93,15 @@ shade3d(q_mesh)
 
 plotVR(q_mesh)
 
-aspect3d(1,1,1/10)
+
+## Cartliage
+elev <- get_loc_elev(rio_grande_gorge, 5000)
+rs_plot <- sphere(elev, progbar = FALSE,
+                  texture = "desert")
+
+
+
+
+
 
 
