@@ -1,9 +1,31 @@
-library(ceramic)
-library(quadmesh)
-library(raster)
+library(ceramic) ## hypertidy/ceramic
+library(quadmesh) ## hypertidy/quadmesh
+library(cartilage) ## hypertidy/cartilage
+library(raster)  
 library(rgl)
-library(r2vr)
-library(r2vr.gis)
+library(r2vr) ## milesmcbain/r2vr
+library(r2vr.gis) ## milesmcbain/r2vr.gis
+## In your .Renviron: MAPBOX_API_KEY=<YOUR MAPBOX API KEY>
+
+
+get_loc_elev <- function(loc, buffer = 5000){
+
+  decode_elevation <- function(dat,...) {
+    height <-  -10000 + ((dat[[1]] * 256 * 256 + dat[[2]] * 256 + dat[[3]]) * 0.1)
+    projection(height) <- "+proj=merc +a=6378137 +b=6378137"
+    height
+  }
+
+  dem_tiles <-
+    ceramic::cc_location(loc = loc,
+                         buffer = buffer,
+                         type = "mapbox.terrain-rgb",
+                         max_tiles = 16,
+                         crop_to_buffer = TRUE,
+                         debug = TRUE)
+
+  decode_elevation(dem_tiles)
+}
 
 get_loc_3d <- function(loc, buffer = 5000){
 
@@ -60,25 +82,7 @@ plotVR <- function(q_mesh){
 
 }
 
-get_loc_elev <- function(loc, buffer = 5000){
-
-  decode_elevation <- function(dat,...) {
-    height <-  -10000 + ((dat[[1]] * 256 * 256 + dat[[2]] * 256 + dat[[3]]) * 0.1)
-    projection(height) <- "+proj=merc +a=6378137 +b=6378137"
-    height
-  }
-
-  dem_tiles <-
-    ceramic::cc_location(loc = loc,
-                         buffer = buffer,
-                         type = "mapbox.terrain-rgb",
-                         max_tiles = 32,
-                         crop_to_buffer = TRUE,
-                         debug = TRUE)
-
-  decode_elevation(dem_tiles)
-}
-
+## Example locations
 rio_grande_gorge<- c(-105.732960, 36.475326)
 mt_tibbro <- c(152.946954, -26.926598)
 monte_tomaro <- c(8.863926, 46.106759)
@@ -86,19 +90,20 @@ iceland  <- c(-18.453073, 64.775668)
 fuji <- c(138.731212, 35.364927)
 hobart <- c(147.326011, -42.880124)
 claremont <- c(147.210690, -42.779476)
+barron_falls <- c(145.643248, -16.833429)
 
 q_mesh <- get_loc_3d(fuji, 100000)
 
-shade3d(q_mesh)
-
+## VR
 plotVR(q_mesh)
 
+## rgl
+shade3d(q_mesh)
 
-## Cartliage
+## Cartilage
 elev <- get_loc_elev(rio_grande_gorge, 5000)
 rs_plot <- sphere(elev, progbar = FALSE,
                   texture = "desert")
-
 
 
 
